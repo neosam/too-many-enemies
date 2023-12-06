@@ -35,6 +35,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         color: Color::ALICE_BLUE,
         brightness: 0.8,
     });
+    commands.insert_resource(ClearColor(Color::BLACK));
 }
 
 fn rotate(mut query: Query<&mut Transform, With<Rotate>>, time: Res<Time>) {
