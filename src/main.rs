@@ -6,18 +6,39 @@
 
 use bevy::{asset::AssetMetaCheck, prelude::*};
 
+#[derive(Component)]
+pub struct Rotate;
+
 fn main() {
     App::new()
         .insert_resource(AssetMetaCheck::Never)
         .add_plugins(DefaultPlugins)
         .add_systems(Startup, setup)
+        .add_systems(Update, rotate)
         .run();
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn(Camera2dBundle::default());
-    commands.spawn(SpriteBundle {
-        texture: asset_server.load("ducky.png"),
+    commands.spawn(Camera3dBundle {
+        transform: Transform::from_translation(Vec3::new(0.0, 3.0, 10.0))
+            .looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y),
         ..Default::default()
     });
+    commands.spawn((
+        SceneBundle {
+            scene: asset_server.load("ship.glb#Scene0"),
+            ..Default::default()
+        },
+        Rotate,
+    ));
+    commands.insert_resource(AmbientLight {
+        color: Color::ALICE_BLUE,
+        brightness: 0.8,
+    });
+}
+
+fn rotate(mut query: Query<&mut Transform, With<Rotate>>, time: Res<Time>) {
+    for mut transform in query.iter_mut() {
+        transform.rotate(Quat::from_rotation_y(0.41 * time.delta_seconds()));
+    }
 }
