@@ -4,7 +4,7 @@
 // Feel free to delete this line.
 #![allow(clippy::too_many_arguments, clippy::type_complexity)]
 
-use bevy::{prelude::*, asset::AssetMetaCheck};
+use bevy::{asset::AssetMetaCheck, prelude::*};
 
 fn main() {
     App::new()
