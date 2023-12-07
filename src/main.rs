@@ -9,9 +9,9 @@ use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
 #[derive(Component, Reflect)]
 pub struct ActiveCamera {
-    distance_to_focus: f32,
-    rotation_y: f32,
-    rotation_x: f32,
+    pub distance_to_focus: f32,
+    pub rotation_y: f32,
+    pub rotation_x: f32,
 }
 
 impl Default for ActiveCamera {
@@ -24,7 +24,8 @@ impl Default for ActiveCamera {
     }
 }
 
-#[derive(Resource)]
+#[derive(Resource, Reflect)]
+#[reflect(Resource)]
 pub struct CameraControllerState {
     pub active: bool,
     pub mouse_speed: f32,
@@ -44,7 +45,9 @@ pub struct CameraFocus;
 fn main() {
     let mut app = App::new();
     app.insert_resource(AssetMetaCheck::Never)
-        .add_plugins(DefaultPlugins);
+        .add_plugins(DefaultPlugins)
+        .register_type::<ActiveCamera>()
+        .register_type::<CameraControllerState>();
 
     if cfg!(debug_assertions) {
         app.add_plugins(WorldInspectorPlugin::new());
