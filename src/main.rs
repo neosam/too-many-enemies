@@ -5,31 +5,40 @@
 #![allow(clippy::too_many_arguments, clippy::type_complexity)]
 
 use bevy::{asset::AssetMetaCheck, prelude::*};
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
 #[derive(Component)]
 pub struct Rotate;
 
 fn main() {
-    App::new()
+    let mut app = App::new();
+    app
         .insert_resource(AssetMetaCheck::Never)
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins);
+    
+    if cfg!(debug_assertions) {
+        app.add_plugins(WorldInspectorPlugin::new());
+    }
+
+    app
         .add_systems(Startup, setup)
         .add_systems(Update, rotate)
         .run();
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn(Camera3dBundle {
+    commands.spawn((Camera3dBundle {
         transform: Transform::from_translation(Vec3::new(0.0, 3.0, 10.0))
             .looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y),
         ..Default::default()
-    });
+    }, Name::new("Camera")));
     commands.spawn((
         SceneBundle {
             scene: asset_server.load("ship.glb#Scene0"),
             ..Default::default()
         },
         Rotate,
+        Name::new("Ship"),
     ));
     commands.insert_resource(AmbientLight {
         color: Color::ALICE_BLUE,
