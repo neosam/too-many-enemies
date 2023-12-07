@@ -26,3 +26,5 @@ opt-level = 1
 bevy = "0.12.1"
 bevy-inspector-egui = "0.21"
 anyhow = "1.0"
+bevy_rapier3d = {version="0.23.0", features = ["debug-render-3d"]}
+rand = "0.8.5"
