@@ -326,10 +326,10 @@ pub fn ship_velocity_controller(mut player_query: Query<(&mut Velocity, &Transfo
 }
 
 pub fn player_rotation_controller(
-    mut player_query: Query<(&mut Transform, &mut Velocity, &Ship), With<Player>>,
+    mut player_query: Query<&mut Transform, With<Player>>,
     camera_query: Query<&Transform, (With<ActiveCamera>, Without<Player>)>,
 ) -> anyhow::Result<()> {
-    let (mut player_transform, mut velocity, ship) = player_query.get_single_mut()?;
+    let mut player_transform = player_query.get_single_mut()?;
     let camera_transform = camera_query.get_single()?;
     player_transform.rotation =
         player_transform.rotation + (camera_transform.rotation - player_transform.rotation) * 0.2;
@@ -348,7 +348,7 @@ pub fn spawn_bullet(
             let forward_vector = transform.forward();
             let bullet_spawn_offset = forward_vector * ship.bullet_spawn_distance;
             let bullet = BulletBundle::new(
-                &bullet_assets.as_ref(),
+                bullet_assets.as_ref(),
                 forward_vector,
                 Transform::from_translation(transform.translation + bullet_spawn_offset),
             );
