@@ -96,6 +96,7 @@ pub struct BulletBundle {
     pub velocity: Velocity,
     pub name: Name,
     pub delayed_despawn: DelayedDespawn,
+    pub active_events: ActiveEvents,
 }
 impl BulletBundle {
     pub fn new(bullet_assets: &BulletAssets, direction: Vec3, transform: Transform) -> Self {
@@ -112,6 +113,7 @@ impl BulletBundle {
             velocity: Velocity::linear(direction * 100.0),
             name: Name::new("Bullet"),
             delayed_despawn: DelayedDespawn::new(5.0),
+            active_events: ActiveEvents::COLLISION_EVENTS,
         }
     }
 }
@@ -146,6 +148,8 @@ fn main() {
                 spawn_bullet,
                 autoshoot.pipe(error_handler),
                 delayed_despawn,
+                bullet_collision,
+                collision_logger,
             ),
         )
         .run();
@@ -183,6 +187,7 @@ pub fn setup(
         Collider::cuboid(1.0, 0.4, 1.0),
         RigidBody::Dynamic,
         Velocity::default(),
+        ActiveEvents::COLLISION_EVENTS,
     ));
     commands.insert_resource(AmbientLight {
         color: Color::ALICE_BLUE,
@@ -203,6 +208,7 @@ pub fn setup(
         Velocity::default(),
         Collider::cuboid(2.5, 0.6, 1.5),
         RigidBody::Dynamic,
+        ActiveEvents::COLLISION_EVENTS,
     ));
     let bullet_shape = meshes.add(
         shape::UVSphere {
@@ -238,7 +244,7 @@ pub fn setup_stars(
     });
     let star_shape = meshes.add(
         shape::UVSphere {
-            radius: 0.3,
+            radius: 0.1,
             ..Default::default()
         }
         .into(),
@@ -248,6 +254,8 @@ pub fn setup_stars(
             Name::new("Stars"),
             Transform::default(),
             GlobalTransform::default(),
+            Visibility::default(),
+            InheritedVisibility::default(),
         ))
         .with_children(move |stars| {
             let mut rng = rand::thread_rng();
@@ -416,6 +424,42 @@ pub fn delayed_despawn(
         if delayed_despawn.timer.tick(time.delta()).just_finished() {
             commands.entity(entity).despawn();
         }
+    }
+}
+
+pub fn bullet_collision(
+    mut commands: Commands,
+    mut collision_events: EventReader<CollisionEvent>,
+    bullet_query: Query<&Bullet>,
+) {
+    let bullet_collusions = collision_events
+        .read()
+        .filter_map(|event| {
+            if let CollisionEvent::Started(entity1, entity2, _) = event {
+                Some((entity1, entity2))
+            } else {
+                None
+            }
+        })
+        .filter_map(|(entity1, entity2)| {
+            if bullet_query.contains(*entity1) {
+                Some((entity1, entity2))
+            } else if bullet_query.contains(*entity2) {
+                Some((entity2, entity1))
+            } else {
+                None
+            }
+        });
+
+    for (bullet, other_entity) in bullet_collusions {
+        commands.entity(*bullet).despawn();
+        commands.entity(*other_entity).despawn_recursive();
+    }
+}
+
+pub fn collision_logger(mut collision_event_reader: EventReader<CollisionEvent>) {
+    for event in collision_event_reader.read() {
+        bevy::log::info!("Collision: {:?}", event);
     }
 }
 
