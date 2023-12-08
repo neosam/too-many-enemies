@@ -295,12 +295,17 @@ pub fn camera_controller(
     mut camera_query: Query<&mut ActiveCamera>,
 ) -> anyhow::Result<()> {
     let mut window = windows.get_single_mut()?;
-    if mouse.just_pressed(MouseButton::Left) {
+    let mouse_button = if cfg!(debug_assertions) {
+        MouseButton::Right
+    } else {
+        MouseButton::Left
+    };
+    if mouse.just_pressed(mouse_button) {
         window.cursor.visible = false;
         window.cursor.grab_mode = CursorGrabMode::Locked;
         camera_controller_state.active = true;
     }
-    if mouse.just_released(MouseButton::Left) {
+    if mouse.just_released(mouse_button) {
         window.cursor.visible = true;
         window.cursor.grab_mode = CursorGrabMode::None;
         camera_controller_state.active = false;
