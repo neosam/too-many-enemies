@@ -64,6 +64,18 @@ pub struct Ship {
 #[derive(Component)]
 pub struct Bullet;
 
+#[derive(Component)]
+pub struct DelayedDespawn {
+    pub timer: Timer,
+}
+impl DelayedDespawn {
+    pub fn new(duration: f32) -> Self {
+        Self {
+            timer: Timer::from_seconds(duration, TimerMode::Once),
+        }
+    }
+}
+
 #[derive(Bundle)]
 pub struct StarBundle {
     pub pbr_bundle: PbrBundle,
@@ -82,6 +94,8 @@ pub struct BulletBundle {
     pub collider: Collider,
     pub rigid_body: RigidBody,
     pub velocity: Velocity,
+    pub name: Name,
+    pub delayed_despawn: DelayedDespawn,
 }
 impl BulletBundle {
     pub fn new(bullet_assets: &BulletAssets, direction: Vec3, transform: Transform) -> Self {
@@ -96,6 +110,8 @@ impl BulletBundle {
             collider: Collider::ball(0.1),
             rigid_body: RigidBody::Dynamic,
             velocity: Velocity::linear(direction * 100.0),
+            name: Name::new("Bullet"),
+            delayed_despawn: DelayedDespawn::new(5.0),
         }
     }
 }
@@ -129,6 +145,7 @@ fn main() {
                 player_rotation_controller.pipe(error_handler),
                 spawn_bullet,
                 autoshoot.pipe(error_handler),
+                delayed_despawn,
             ),
         )
         .run();
@@ -388,6 +405,18 @@ pub fn autoshoot(
     }
 
     Ok(())
+}
+
+pub fn delayed_despawn(
+    mut commands: Commands,
+    mut delayed_despawn_query: Query<(Entity, &mut DelayedDespawn)>,
+    time: Res<Time>,
+) {
+    for (entity, mut delayed_despawn) in delayed_despawn_query.iter_mut() {
+        if delayed_despawn.timer.tick(time.delta()).just_finished() {
+            commands.entity(entity).despawn();
+        }
+    }
 }
 
 pub fn error_handler(In(result): In<anyhow::Result<()>>) {
