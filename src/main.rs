@@ -60,6 +60,8 @@ pub struct Ship {
     pub speed: f32,
     pub bullet_spawn_distance: f32,
 }
+#[derive(Component)]
+pub struct Enemy;
 
 #[derive(Component)]
 pub struct Bullet;
@@ -85,6 +87,74 @@ pub struct StarBundle {
 #[derive(Event)]
 pub struct ShootBulletEvent {
     shooter: Entity,
+}
+
+#[derive(Bundle)]
+pub struct ShipBundle {
+    scene_bundle: SceneBundle,
+    name: Name,
+    ship: Ship,
+    collider: Collider,
+    rigid_body: RigidBody,
+    velocity: Velocity,
+    active_events: ActiveEvents,
+}
+#[derive(Bundle)]
+pub struct PlayerBundle {
+    ship_bundle: ShipBundle,
+    player: Player,
+    camera_focus: CameraFocus,
+}
+impl PlayerBundle {
+    pub fn new(asset_server: &AssetServer) -> Self {
+        Self {
+            ship_bundle: ShipBundle {
+                scene_bundle: SceneBundle {
+                    scene: asset_server.load("ship.glb#Scene0"),
+                    ..Default::default()
+                },
+                name: Name::new("Ship"),
+                ship: Ship {
+                    speed: 10.0,
+                    bullet_spawn_distance: 2.0,
+                },
+                collider: Collider::cuboid(1.0, 0.4, 1.0),
+                rigid_body: RigidBody::Dynamic,
+                velocity: Velocity::default(),
+                active_events: ActiveEvents::COLLISION_EVENTS,
+            },
+            camera_focus: CameraFocus,
+            player: Player,
+        }
+    }
+}
+#[derive(Bundle)]
+pub struct EnemyBundle {
+    ship_bundle: ShipBundle,
+    enemy: Enemy,
+}
+impl EnemyBundle {
+    pub fn new(asset_server: &AssetServer, transform: Transform) -> Self {
+        Self {
+            ship_bundle: ShipBundle {
+                scene_bundle: SceneBundle {
+                    scene: asset_server.load("enemy-ship.glb#Scene0"),
+                    transform,
+                    ..Default::default()
+                },
+                name: Name::new("Enemy"),
+                ship: Ship {
+                    speed: 5.0,
+                    bullet_spawn_distance: 2.0,
+                },
+                collider: Collider::cuboid(1.0, 0.4, 1.0),
+                rigid_body: RigidBody::Dynamic,
+                velocity: Velocity::default(),
+                active_events: ActiveEvents::COLLISION_EVENTS,
+            },
+            enemy: Enemy,
+        }
+    }
 }
 
 #[derive(Bundle)]
@@ -172,44 +242,16 @@ pub fn setup(
         ActiveCamera::default(),
     ));
 
-    commands.spawn((
-        SceneBundle {
-            scene: asset_server.load("ship.glb#Scene0"),
-            ..Default::default()
-        },
-        Name::new("Ship"),
-        CameraFocus,
-        Ship {
-            speed: 10.0,
-            bullet_spawn_distance: 2.0,
-        },
-        Player,
-        Collider::cuboid(1.0, 0.4, 1.0),
-        RigidBody::Dynamic,
-        Velocity::default(),
-        ActiveEvents::COLLISION_EVENTS,
+    commands.spawn(PlayerBundle::new(&asset_server));
+    commands.spawn(EnemyBundle::new(
+        &asset_server,
+        Transform::from_xyz(0.0, 0.0, -50.0),
     ));
     commands.insert_resource(AmbientLight {
         color: Color::ALICE_BLUE,
         brightness: 0.8,
     });
 
-    commands.spawn((
-        SceneBundle {
-            scene: asset_server.load("enemy-ship.glb#Scene0"),
-            transform: Transform::from_xyz(0.0, 0.0, -50.0),
-            ..Default::default()
-        },
-        Name::new("Enemy"),
-        Ship {
-            speed: 5.0,
-            bullet_spawn_distance: 2.0,
-        },
-        Velocity::default(),
-        Collider::cuboid(2.5, 0.6, 1.5),
-        RigidBody::Dynamic,
-        ActiveEvents::COLLISION_EVENTS,
-    ));
     let bullet_shape = meshes.add(
         shape::UVSphere {
             radius: 0.3,
