@@ -226,26 +226,34 @@ pub fn setup_stars(
         }
         .into(),
     );
-    commands.spawn_batch((0..1000).map(move |_| {
-        let mut rng = rand::thread_rng();
-        let phi = rng.gen_range(0.0..std::f32::consts::PI * 2.0);
-        let theta = rng.gen_range(0.0..std::f32::consts::PI * 2.0);
-        let distance = rng.gen_range(20.0..100.0);
-        let x = distance * phi.sin() * theta.cos();
-        let y = distance * phi.sin() * theta.sin();
-        let z = distance * phi.cos();
-        let mut transform = Transform::from_translation(Vec3::new(x, y, z));
-        transform.scale = Vec3::splat(0.1);
-        StarBundle {
-            pbr_bundle: PbrBundle {
-                mesh: star_shape.clone(),
-                material: star_material.clone(),
-                transform,
-                ..Default::default()
-            },
-            star: Star,
-        }
-    }));
+    commands
+        .spawn((
+            Name::new("Stars"),
+            Transform::default(),
+            GlobalTransform::default(),
+        ))
+        .with_children(move |stars| {
+            let mut rng = rand::thread_rng();
+            for _ in 0..1000 {
+                let phi = rng.gen_range(0.0..std::f32::consts::PI * 2.0);
+                let theta = rng.gen_range(0.0..std::f32::consts::PI * 2.0);
+                let distance = rng.gen_range(20.0..100.0);
+                let x = distance * phi.sin() * theta.cos();
+                let y = distance * phi.sin() * theta.sin();
+                let z = distance * phi.cos();
+                let mut transform = Transform::from_translation(Vec3::new(x, y, z));
+                transform.scale = Vec3::splat(0.1);
+                stars.spawn(StarBundle {
+                    pbr_bundle: PbrBundle {
+                        mesh: star_shape.clone(),
+                        material: star_material.clone(),
+                        transform,
+                        ..Default::default()
+                    },
+                    star: Star,
+                });
+            }
+        });
 }
 
 pub fn respawn_stars(
