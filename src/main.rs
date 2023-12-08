@@ -83,7 +83,7 @@ fn main() {
             (
                 camera_transform_update,
                 camera_controller.pipe(error_handler),
-                player_velocity_controller.pipe(error_handler),
+                ship_velocity_controller,
                 respawn_stars.pipe(error_handler),
                 player_rotation_controller.pipe(error_handler),
             ),
@@ -120,6 +120,19 @@ pub fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         color: Color::ALICE_BLUE,
         brightness: 0.8,
     });
+
+    commands.spawn((
+        SceneBundle {
+            scene: asset_server.load("enemy-ship.glb#Scene0"),
+            transform: Transform::from_xyz(0.0, 0.0, -50.0),
+            ..Default::default()
+        },
+        Name::new("Enemy"),
+        Ship { speed: 5.0 },
+        Velocity::default(),
+        Collider::cuboid(2.5, 0.6, 1.5),
+        RigidBody::Dynamic,
+    ));
 
     commands.insert_resource(ClearColor(Color::BLACK));
     commands.insert_resource(CameraControllerState::default());
@@ -175,10 +188,6 @@ pub fn respawn_stars(
             .distance(camera_transform.translation)
             > 100.0
         {
-            //let mut rng = rand::thread_rng();
-            //let x = rng.gen_range(-100.0..100.0);
-            //let y = rng.gen_range(-100.0..100.0);
-            //let z = rng.gen_range(-100.0..100.0);
             let diff = star_transform.translation - camera_transform.translation;
             star_transform.translation = camera_transform.translation - diff;
         }
@@ -239,13 +248,10 @@ pub fn camera_controller(
     Ok(())
 }
 
-pub fn player_velocity_controller(
-    mut player_query: Query<(&mut Velocity, &Transform, &Ship), With<Player>>,
-) -> anyhow::Result<()> {
-    let (mut velocity, transform, ship) = player_query.get_single_mut()?;
-    velocity.linvel = transform.rotation * Vec3::new(0.0, 0.0, -ship.speed);
-
-    Ok(())
+pub fn ship_velocity_controller(mut player_query: Query<(&mut Velocity, &Transform, &Ship)>) {
+    for (mut velocity, transform, ship) in player_query.iter_mut() {
+        velocity.linvel = transform.rotation * Vec3::new(0.0, 0.0, -ship.speed);
+    }
 }
 
 pub fn player_rotation_controller(
