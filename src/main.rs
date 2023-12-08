@@ -85,6 +85,7 @@ fn main() {
                 camera_controller.pipe(error_handler),
                 player_velocity_controller.pipe(error_handler),
                 respawn_stars.pipe(error_handler),
+                player_rotation_controller.pipe(error_handler),
             ),
         )
         .run();
@@ -95,6 +96,7 @@ pub fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         Camera3dBundle {
             transform: Transform::from_translation(Vec3::new(0.0, 3.0, 10.0))
                 .looking_at(Vec3::new(0.0, 0.0, 0.0), Vec3::Y),
+
             ..Default::default()
         },
         Name::new("Camera"),
@@ -225,7 +227,6 @@ pub fn camera_controller(
     }
     for event in mouse_motion_events.read() {
         if camera_controller_state.active {
-            bevy::log::info!("Mouse motion: {:?}", event);
             if let Ok(mut camera) = camera_query.get_single_mut() {
                 camera.rotation_y -=
                     time.delta_seconds() * event.delta.x * camera_controller_state.mouse_speed;
@@ -242,7 +243,19 @@ pub fn player_velocity_controller(
     mut player_query: Query<(&mut Velocity, &Transform, &Ship), With<Player>>,
 ) -> anyhow::Result<()> {
     let (mut velocity, transform, ship) = player_query.get_single_mut()?;
-    velocity.linvel = transform.rotation * Vec3::new(0.0, 0.0, ship.speed);
+    velocity.linvel = transform.rotation * Vec3::new(0.0, 0.0, -ship.speed);
+
+    Ok(())
+}
+
+pub fn player_rotation_controller(
+    mut player_query: Query<(&mut Transform, &mut Velocity, &Ship), With<Player>>,
+    camera_query: Query<&Transform, (With<ActiveCamera>, Without<Player>)>,
+) -> anyhow::Result<()> {
+    let (mut player_transform, mut velocity, ship) = player_query.get_single_mut()?;
+    let camera_transform = camera_query.get_single()?;
+    player_transform.rotation =
+        player_transform.rotation + (camera_transform.rotation - player_transform.rotation) * 0.2;
 
     Ok(())
 }
